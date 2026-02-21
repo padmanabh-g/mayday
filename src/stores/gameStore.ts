@@ -26,6 +26,7 @@ interface GameStore {
   atcMessages: ATCMessage[]
   atcListening: boolean
   atcThinking: boolean
+  atcConnected: boolean
 
   // Landing
   landingScore: LandingScore | null
@@ -40,8 +41,10 @@ interface GameStore {
   setControl: (key: keyof ControlInputs, value: boolean) => void
   updateFlight: (state: Partial<FlightState>) => void
   addATCMessage: (message: ATCMessage) => void
+  updateLastATCMessage: (role: 'pilot' | 'atc', text: string, partial: boolean) => void
   setATCListening: (listening: boolean) => void
   setATCThinking: (thinking: boolean) => void
+  setATCConnected: (connected: boolean) => void
   setLandingScore: (score: LandingScore) => void
   resetGame: () => void
   setElapsedTime: (time: number) => void
@@ -99,6 +102,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   atcMessages: [],
   atcListening: false,
   atcThinking: false,
+  atcConnected: false,
 
   landingScore: null,
 
@@ -115,6 +119,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       atcMessages: [],
       atcThinking: false,
       atcListening: false,
+      atcConnected: false,
       landingScore: null,
       elapsedTime: 0,
       cameraMode: 'chase',
@@ -159,8 +164,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
       atcMessages: [...state.atcMessages, message],
     })),
 
+  updateLastATCMessage: (role, text, partial) =>
+    set((state) => {
+      const msgs = [...state.atcMessages]
+      const lastIdx = msgs.length - 1
+      if (lastIdx >= 0 && msgs[lastIdx].role === role && msgs[lastIdx].partial) {
+        msgs[lastIdx] = { ...msgs[lastIdx], text, partial }
+        return { atcMessages: msgs }
+      }
+      // No existing partial message to update — add a new one
+      return { atcMessages: [...msgs, { role, text, timestamp: Date.now(), partial }] }
+    }),
+
   setATCListening: (listening) => set({ atcListening: listening }),
   setATCThinking: (thinking) => set({ atcThinking: thinking }),
+  setATCConnected: (connected) => set({ atcConnected: connected }),
 
   setLandingScore: (score) => set({ landingScore: score }),
 
@@ -175,6 +193,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       atcMessages: [],
       atcThinking: false,
       atcListening: false,
+      atcConnected: false,
       landingScore: null,
       elapsedTime: 0,
       cameraMode: 'chase',

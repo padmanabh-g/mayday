@@ -44,6 +44,7 @@ export interface ATCMessage {
   role: 'pilot' | 'atc'
   text: string
   timestamp: number
+  partial?: boolean
 }
 
 export type GamePhase = 'menu' | 'flying' | 'landed' | 'crashed' | 'paused'
