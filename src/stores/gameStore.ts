@@ -65,10 +65,13 @@ const initialControls: ControlInputs = {
 const createInitialFlight = (scenario?: Scenario): FlightState => {
   const speed = scenario?.startSpeed ?? 70
   const headingRad = ((scenario?.startHeading ?? 0) * Math.PI) / 180
+  const [bx, by, bz] = scenario?.startPosition ?? [0, 500, -5000]
+  // Add gentle randomness so you're never perfectly lined up
+  const rx = bx + (Math.random() - 0.5) * 600   // ±300m lateral
+  const rz = bz + (Math.random() - 0.5) * 1000  // ±500m distance
+  const ry = by + (Math.random() - 0.5) * 100    // ±50m altitude
   return {
-  position: new THREE.Vector3(
-    ...(scenario?.startPosition ?? [0, 500, -5000])
-  ),
+  position: new THREE.Vector3(rx, ry, rz),
   velocity: new THREE.Vector3(
     Math.sin(headingRad) * speed,
     0,
@@ -76,7 +79,7 @@ const createInitialFlight = (scenario?: Scenario): FlightState => {
   ),
   rotation: new THREE.Euler(0, headingRad, 0, 'YXZ'),
   speed,
-  altitude: scenario?.startAltitude ?? 500,
+  altitude: ry,
   heading: scenario?.startHeading ?? 0,
   verticalSpeed: 0,
   throttle: scenario?.engineFailure ? 0 : 0.6,
