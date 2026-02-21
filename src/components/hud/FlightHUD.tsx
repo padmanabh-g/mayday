@@ -115,8 +115,8 @@ export default function FlightHUD() {
 
   if (phase !== 'flying') return null
 
-  // Aerodynamic stall at ~50 m/s; warn at 55 m/s (~107 kts) for advance notice
-  const isStall = data.speed < 55 && !data.onGround
+  // Arcade stall at 25 m/s; warn at 30 m/s for advance notice
+  const isStall = data.speed < 30 && !data.onGround
   const isOverspeed = data.speed > 110
 
   const getCardinal = (h: number) => {

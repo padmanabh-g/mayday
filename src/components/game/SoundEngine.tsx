@@ -115,7 +115,7 @@ export default function SoundEngine() {
       }
 
       // Stall warning
-      const isStalling = flight.speed < 55 && !flight.onGround
+      const isStalling = flight.speed < 30 && !flight.onGround
       if (isStalling && !wasStalling.current) {
         audioEngine.play('stall-warning', 0.7)
       } else if (!isStalling && wasStalling.current) {

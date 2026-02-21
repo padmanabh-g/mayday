@@ -47,13 +47,13 @@ export function updatePhysics(
   if (controls.yawRight) yawInput += 1
 
   if (!isEngineFailure) {
-    if (controls.throttleUp) throttle += 1.2 * dt
-    if (controls.throttleDown) throttle -= 1.2 * dt
+    if (controls.throttleUp) throttle += 1.5 * dt
+    if (controls.throttleDown) throttle -= 1.5 * dt
   }
   throttle = clamp(throttle, 0, 1)
 
   // --- Rotation ---
-  const speedFactor = clamp(flight.speed / 60, 0.2, 1.5)
+  const speedFactor = clamp(flight.speed / 40, 0.5, 1.2)
   const pitchRate = PHYSICS.PITCH_RATE * pitchInput * speedFactor * dt
   const rollRate = PHYSICS.ROLL_RATE * rollInput * speedFactor * dt
   const yawRate = PHYSICS.YAW_RATE * yawInput * speedFactor * dt
@@ -64,18 +64,18 @@ export function updatePhysics(
 
   // Auto-level roll when no input
   if (!controls.rollLeft && !controls.rollRight) {
-    roll *= 1 - 2.0 * dt
+    roll *= 1 - 3.0 * dt
   }
 
   // Auto-level pitch when no input (gentler than roll — aircraft naturally wants level)
   if (!controls.pitchUp && !controls.pitchDown) {
-    pitch *= 1 - 0.8 * dt
+    pitch *= 1 - 2.0 * dt
   }
 
   // Yaw from roll (coordinated turn)
   // Banking right (roll < 0) should turn right (yaw decreasing / clockwise)
-  if (Math.abs(roll) > 0.01 && flight.speed > PHYSICS.STALL_SPEED * 0.5) {
-    yaw += Math.sin(roll) * 0.5 * dt
+  if (Math.abs(roll) > 0.05 && flight.speed > 15) {
+    yaw += Math.sin(roll) * 0.8 * dt
   }
 
   pitch = clamp(pitch, -Math.PI / 3, Math.PI / 3)
@@ -99,25 +99,25 @@ export function updatePhysics(
   // Drag
   const speed = flight.velocity.length()
   const flapDrag = flight.flaps * PHYSICS.FLAP_DRAG_PENALTY
-  const dragMagnitude = (PHYSICS.DRAG_FACTOR + flapDrag) * speed * speed
+  const dragMagnitude = (PHYSICS.DRAG_FACTOR + flapDrag) * speed * 60
   const drag = flight.velocity.clone().normalize().multiplyScalar(-dragMagnitude)
 
   // Lift
   const liftFactor =
     PHYSICS.LIFT_FACTOR + flight.flaps * PHYSICS.FLAP_LIFT_BONUS
-  const aoa = pitch // simplified angle of attack
-  let liftMagnitude = liftFactor * speed * speed * Math.cos(aoa)
+  let liftMagnitude = liftFactor * speed * 60
 
   // Stall
   if (speed < PHYSICS.STALL_SPEED) {
     const stallFactor = speed / PHYSICS.STALL_SPEED
-    liftMagnitude *= stallFactor * stallFactor
+    liftMagnitude *= stallFactor
   }
 
-  // Lift acts in the aircraft's up direction (perpendicular to wings)
-  // When banked, vertical component of lift decreases — requiring back pressure or more speed
+  // Lift direction: blend 70% world-up so banking doesn't kill vertical lift
   const aircraftUp = new THREE.Vector3(0, 1, 0).applyQuaternion(tempQuat)
-  const lift = aircraftUp.multiplyScalar(liftMagnitude)
+  const worldUp = new THREE.Vector3(0, 1, 0)
+  const liftDir = aircraftUp.lerp(worldUp, 0.7).normalize()
+  const lift = liftDir.multiplyScalar(liftMagnitude)
 
   // Gravity
   const gravity = new THREE.Vector3(0, -PHYSICS.GRAVITY, 0)
@@ -177,7 +177,7 @@ export function updatePhysics(
     const verticalSpeed = newVelocity.y
     const isOnRunway = isPositionOnRunway(newPosition.x, newPosition.z)
 
-    if (verticalSpeed < -10 || !isOnRunway) {
+    if (verticalSpeed < -12 || !isOnRunway) {
       crashed = true
     } else {
       // On ground, kill vertical velocity
@@ -278,11 +278,11 @@ export function calculateLandingScore(
   else clScore = 0
 
   // Approach speed scoring (ideal 67-72 m/s ~ 130-140 kts)
-  const speedDelta = Math.abs(approachSpeed - 69.5)
+  const speedDelta = Math.abs(approachSpeed - 65)
   let asScore: number
-  if (speedDelta < 3) asScore = 100
-  else if (speedDelta < 10) asScore = 100 - ((speedDelta - 3) / 7) * 40
-  else if (speedDelta < 25) asScore = 60 - ((speedDelta - 10) / 15) * 60
+  if (speedDelta < 5) asScore = 100
+  else if (speedDelta < 15) asScore = 100 - ((speedDelta - 5) / 10) * 40
+  else if (speedDelta < 30) asScore = 60 - ((speedDelta - 15) / 15) * 60
   else asScore = 0
 
   // Approach angle scoring (ideal 3°)
